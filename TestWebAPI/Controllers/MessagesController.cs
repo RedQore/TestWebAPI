@@ -18,35 +18,24 @@ namespace TestWebAPI.Controllers
         }
 
         [HttpGet("All")]
-        public IEnumerable<ServerMessage> GetAll()
+        public IEnumerable<AdminMessage> GetAll()
         {
             return _messageQueue.GetAll();
         }
 
-        [HttpGet(Name = "Messages")]
+        [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public IActionResult GetById(int recipientId)
-        {
-            var message = _messageQueue.GetById(recipientId);
-
-            return message.Any() ? Ok(message) : NotFound();
-        }
-
-
-        [HttpDelete(Name = "Messages")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public IActionResult DeleteById(int recipientId)
         {
             var message = _messageQueue.Pop(recipientId);
 
             return message.Any() ? Ok(message) : NotFound();
         }
 
-        [HttpPost(Name = "Messages")]
+        [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
-        public IActionResult Post(IEnumerable<ServerMessage> messages)
+        public IActionResult Post(IEnumerable<AdminMessage> messages)
         {
             _messageQueue.Put(messages);
 

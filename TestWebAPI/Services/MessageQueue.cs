@@ -4,29 +4,39 @@ namespace TestWebAPI.Services
 {
     public class MessageQueue
     {
-        private List<ServerMessage> _messages = new();
+        private Queue<AdminMessage> _messages = new();
 
-        public IEnumerable<ServerMessage> GetAll() => _messages;
+        public IEnumerable<AdminMessage> GetAll() => _messages;
 
-        public IEnumerable<ClientMessage> GetById(int resipientId)
+        public void Put(IEnumerable<AdminMessage> messages)
         {
-            return _messages.FindAll(message => message.Recipients.Contains(resipientId)).
-                SelectMany(message => new List<ClientMessage>() { new(message.Object, message.Body) });
+            foreach (var message in messages)
+                _messages.Enqueue(message);
         }
-
-        public void Put(IEnumerable<ServerMessage> message) => _messages.AddRange(message);
 
         public IEnumerable<ClientMessage> Pop(int resipientId)
         {
-            var clientMessages = new List<ClientMessage>();
+            var clientMessages = new Queue<ClientMessage>();
+            var newAdminMessages = new Queue<AdminMessage>();
 
-            _messages.FindAll(message => message.Recipients.Contains(resipientId)).ForEach(message =>
+            if (!_messages.Any(message => message.Recipients.Contains(resipientId)))
+                return clientMessages;
+
+            foreach (var message in _messages)
             {
-                clientMessages.Add(new ClientMessage(message.Object, message.Body));
-                message.Recipients.Remove(resipientId);
-            });
+                if (message.Recipients.Contains(resipientId))
+                {
+                    clientMessages.Enqueue(new ClientMessage(message.Object, message.Body));
 
-            _messages = _messages.FindAll(message => message.Recipients.Any());
+                    message.Recipients.Remove(resipientId);
+
+                    if (!message.Recipients.Any())
+                        continue;
+                }
+                newAdminMessages.Enqueue(message);
+            }
+
+            _messages = newAdminMessages;
 
             return clientMessages;
         }
